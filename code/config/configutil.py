@@ -21,7 +21,7 @@ class ReadConfig:
 
 def getpath(key, station):
     root_dir = os.path.dirname(os.path.abspath('.'))
-    readcfg = ReadConfig(root_dir + "\\dlbmm\\config\\conf.cfg")
+    readcfg = ReadConfig(root_dir + "\\config\\conf.cfg")
     val = readcfg.getpath('basepath') + station + '\\' + readcfg.getpath('soltype') + '\\'
     if key == 'eachsolpath' or key == 'parsedsolpath' or key == 'parsedpospath' or key == 'parsedstatpath' or \
             key == 'preprocpath' or key == 'cnnworkpath' or key == 'rfrworkpath' or key == 'svrrbfworkpath'  or key == 'cnnviewpath':
@@ -31,7 +31,7 @@ def getpath(key, station):
     return val
 def loadTemplate(fileName):
     root_dir = os.path.dirname(os.path.abspath('.'))
-    filePath = root_dir + "\\dlbmm\\config\\template\\"+fileName
+    filePath = root_dir + "\\config\\template\\"+fileName
     with open(filePath, 'r', encoding='utf-8') as f:
         content = f.read()
     return content

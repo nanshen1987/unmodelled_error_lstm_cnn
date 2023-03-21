@@ -1,5 +1,6 @@
 import os
 from rtklib.solutils import parseposandstatus, parsesol
+"""解析rtklib定位文件和状态文件"""
 def pasredsol(eachsolpath, parsedsolpath, parsedpospath, parsedstatpath):
     solstatusfileExt = ".sol.stat"
     solext = ".sol"

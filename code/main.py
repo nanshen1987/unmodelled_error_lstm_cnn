@@ -5,6 +5,10 @@ from analyst.viewhandler import viewPreproc, view_common_predict, viewnormdist_d
 
 import numpy as np
 
+from config.configutil import getpath
+from preproc.preprocessor import preproc, removenoiseprefile, countprefile
+from proc.cnn_processor import cnn_train
+from rtklib.solparser import pasredsol
 
 if __name__ == '__main__':
     # sts = ['alic', 'bake', 'bjfs', 'meli', 'penc', 'picl', 'pova',  'sch2','nril', 'tixi', 'yakt', 'hkws']
@@ -48,7 +52,7 @@ if __name__ == '__main__':
     #
     #     print(st, np.array(normdist))
     # batch get txt
-    prenums = range(3, 21)
+    # prenums = range(3, 21)
     # for st in sts:
     #     cnnworkpath = getpath('cnnworkpath', st)
     #     cnnviewpath = getpath('cnnviewpath', st)
@@ -89,11 +93,11 @@ if __name__ == '__main__':
     #             second_pred_res[i, 3:6] = normdist[3:6]
     #     i = i+1
     # np.savez('all_sts_compare', first_pred_res=first_pred_res,second_pred_res= second_pred_res,sts = sts)
-    all_sts_compare = np.load('all_sts_compare.npz')
-    first_pred_res = all_sts_compare['first_pred_res']
-    second_pred_res = all_sts_compare['second_pred_res']
-    sts = all_sts_compare['sts']
-    view_all_sts_compare(first_pred_res, second_pred_res, sts)
+    # all_sts_compare = np.load('all_sts_compare.npz')
+    # first_pred_res = all_sts_compare['first_pred_res']
+    # second_pred_res = all_sts_compare['second_pred_res']
+    # sts = all_sts_compare['sts']
+    # view_all_sts_compare(first_pred_res, second_pred_res, sts)
     # 统计不同元素对结果的影响
     # stcount = len(sts)
     # for i in np.arange(stcount):
@@ -107,7 +111,7 @@ if __name__ == '__main__':
         # np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
         # print(st, np.array(normdist))
 
-    # for st in sts:
+    for st in sts:
         # 1 parse
         # pasredsol(getpath('eachsolpath', st), getpath('parsedsolpath', st), getpath('parsedpospath', st),
         #           getpath('parsedstatpath', st))
@@ -117,23 +121,17 @@ if __name__ == '__main__':
         # 2-1 remove noise data
         # removenoiseprefile(getpath('preprocpath', st), getpath('soltype', st))
         # 3 proc
-        # tstart = time()
-        # fnum = countprefile(getpath('preprocpath', st))
-        # print(st, fnum)
-        # train_range = range(fnum - 10, fnum - 2)
-        # test_range = range(fnum - 2, fnum)
+        tstart = time()
+        fnum = countprefile(getpath('preprocpath', st))
+        print(st, fnum)
+        train_range = range(fnum - 10, fnum - 2)
+        test_range = range(fnum - 2, fnum)
         # 3-1 cnn proc
-        # cnn_train(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range)
+        cnn_train(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range)
         # normdist = cnn_predict(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range, test_range, True)
         # print(st, normdist)
 
-        # # 3-2 rfr proc
-        # rfr_train(getpath('preprocpath', st), getpath('rfrworkpath', st), train_range)
-        # common_predict(getpath('preprocpath', st), getpath('rfrworkpath', st), train_range, test_range, True)
-        # 3-3 svrrbf proc
-        # svrrbf_train(getpath('preprocpath', st), getpath('svrrbfworkpath', st), train_range)
-        # common_predict(getpath('preprocpath', st), getpath('svrrbfworkpath', st), train_range, test_range, True)
-        # print('proc station ', st, ' consume time:', (time() - tstart), 's')
+
         # 4-0 for latex
         # test_range = range(fnum - 2, fnum-1)
         # test_range = range(fnum - 1, fnum)
