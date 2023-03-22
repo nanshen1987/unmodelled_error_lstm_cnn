@@ -8,6 +8,7 @@ import numpy as np
 from config.configutil import getpath
 from preproc.preprocessor import preproc, removenoiseprefile, countprefile
 from proc.cnn_processor import cnn_train
+from proc.lstm_processor import lstm_train
 from rtklib.solparser import pasredsol
 
 if __name__ == '__main__':
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         train_range = range(fnum - 10, fnum - 2)
         test_range = range(fnum - 2, fnum)
         # 3-1 cnn proc
-        cnn_train(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range)
+        lstm_train(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range)
         # normdist = cnn_predict(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range, test_range, True)
         # print(st, normdist)
 

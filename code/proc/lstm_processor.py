@@ -2,14 +2,17 @@ import os
 import pickle
 
 import numpy as np
-from keras import preprocessing
-from keras.callbacks import EarlyStopping
+from keras import Input, Model
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+
 from keras.models import load_model
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM
+from keras.layers import Dense, LSTM
 from keras.models import Sequential
 from keras.optimizer_v2.adam import Adam
+from matplotlib import pyplot as plt
+from tensorflow.python.keras.preprocessing.timeseries import timeseries_dataset_from_array
 
-from analyst.viewhandler import view_cnn_train_hist, view_common_predict
+from analyst.viewhandler import view_common_predict
 
 
 # construct model
@@ -20,6 +23,18 @@ def lstm_model():
     model_lstm.compile(loss='mse', optimizer=Adam())
     model_lstm.summary()
     return model_lstm
+def visualize_loss(history, title):
+    loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
+    epochs = range(len(loss))
+    plt.figure()
+    plt.plot(epochs, loss, "b", label="Training loss")
+    plt.plot(epochs, val_loss, "r", label="Validation loss")
+    plt.title(title)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.show()
 
 def lstm_train(preprocpath, lstmworkpath, train_range):
     step = 6
@@ -30,8 +45,8 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
     batch_size = 256
     epochs = 10
 
-    lstmmodelpath = lstmworkpath + '\\model\\'
-    lstmhistpath = lstmworkpath + '\\hist\\'
+    # lstmmodelpath = lstmworkpath + '\\model\\'
+    # lstmhistpath = lstmworkpath + '\\hist\\'
     files = []
     wfiles = os.listdir(preprocpath)
     for file in wfiles:
@@ -45,6 +60,7 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
         eachfeature = data["feature"]
         eachfeature[:, 12, :] = 0
         eachlabel = data["label"]
+        eachfeature = eachfeature.reshape(-1, 13 * 32)
         if i == train_range[0]:
             feature = eachfeature
             label = eachlabel
@@ -54,13 +70,13 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
 
     split_fraction = 0.715
     train_split = int(split_fraction * int(feature.shape[0]))
-    train_data = feature.loc[0: train_split - 1]
-    val_data = feature.loc[train_split:]
+    train_data = feature[0: train_split - 1]
+    val_data = feature[train_split:]
     start = past + future
     end = start + train_split
-    train_label = label[start:end]
+    train_label = label[start:end][:, 1:4]
     sequence_length = int(past / step)
-    dataset_train = preprocessing.timeseries_dataset_from_array(
+    dataset_train = timeseries_dataset_from_array(
         train_data,
         train_label,
         sequence_length=sequence_length,
@@ -71,10 +87,10 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
 
     label_start = train_split + past + future
 
-    x_val = val_data.iloc[:x_end]
-    y_val = label.iloc[label_start:]
+    x_val = val_data[:x_end]
+    y_val = label[label_start:][:, 1:4]
 
-    dataset_val = preprocessing.timeseries_dataset_from_array(
+    dataset_val = timeseries_dataset_from_array(
         x_val,
         y_val,
         sequence_length=sequence_length,
@@ -86,28 +102,56 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
         inputs, targets = batch
     print("Input shape:", inputs.numpy().shape)
     print("Target shape:", targets.numpy().shape)
+    inputs = Input(shape=(inputs.shape[1], inputs.shape[2]))
+    lstm_out = LSTM(32)(inputs)
+    outputs = Dense(3)(lstm_out)
 
-    feature = feature.reshape(feature.shape[0], 13, 32, 1)
+    model = Model(inputs=inputs, outputs=outputs)
+    model.compile(optimizer=Adam(learning_rate=learning_rate), loss="mse")
+    model.summary()
 
 
+    path_checkpoint = "model_checkpoint.h5"
+    es_callback = EarlyStopping(monitor="val_loss", min_delta=0, patience=5)
 
-    for j in range(1, 4):
-        # 1,north
-        # 2,east
-        # 3,up
-        modelname = str(train_range[0]) + '_' + str(train_range[-1]) + '_' + str(j)
-        # if os.path.exists(cnnmodelpath + modelname + ".h5"):
-        #     print('skip:'+cnnmodelpath + modelname + ".h5")
-        #     continue
-        model = lstm_model()
-        early_stopping = EarlyStopping(monitor='val_loss', patience=50, verbose=2)
-        history = model.fit(feature, label[:, j]*1000, epochs=300, batch_size=64, validation_split=0.125, verbose=2,
-                            shuffle=True, callbacks=[early_stopping])
-        # 保存训练的模型及历史记录
-        with open(lstmhistpath + modelname + ".pkl", 'wb') as hist_file:
-            pickle.dump(history.history, hist_file)
-        model.save(lstmmodelpath + modelname + ".h5")
-        view_cnn_train_hist(lstmworkpath, modelname)
+    modelckpt_callback = ModelCheckpoint(
+        monitor="val_loss",
+        filepath=path_checkpoint,
+        verbose=1,
+        save_weights_only=True,
+        save_best_only=True,
+    )
+
+    history = model.fit(
+        dataset_train,
+        epochs=epochs,
+        validation_data=dataset_val,
+        callbacks=[es_callback, modelckpt_callback],
+    )
+
+
+    visualize_loss(history, "Training and Validation Loss")
+    # feature = feature.reshape(feature.shape[0], 13, 32, 1)
+    #
+    #
+    #
+    # for j in range(1, 4):
+    #     # 1,north
+    #     # 2,east
+    #     # 3,up
+    #     modelname = str(train_range[0]) + '_' + str(train_range[-1]) + '_' + str(j)
+    #     # if os.path.exists(cnnmodelpath + modelname + ".h5"):
+    #     #     print('skip:'+cnnmodelpath + modelname + ".h5")
+    #     #     continue
+    #     model = lstm_model()
+    #     early_stopping = EarlyStopping(monitor='val_loss', patience=50, verbose=2)
+    #     history = model.fit(feature, label[:, j]*1000, epochs=300, batch_size=64, validation_split=0.125, verbose=2,
+    #                         shuffle=True, callbacks=[early_stopping])
+    #     # 保存训练的模型及历史记录
+    #     with open(lstmhistpath + modelname + ".pkl", 'wb') as hist_file:
+    #         pickle.dump(history.history, hist_file)
+    #     model.save(lstmmodelpath + modelname + ".h5")
+    #     view_cnn_train_hist(lstmworkpath, modelname)
 def cnn_predict(preprocpath, cnnworkpath, train_range, test_range, show):
     cnnmodelpath = cnnworkpath + 'model\\'
     cnnoutpath = cnnworkpath + 'out\\'
