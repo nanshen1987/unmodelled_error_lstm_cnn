@@ -125,7 +125,7 @@ if __name__ == '__main__':
         tstart = time()
         fnum = countprefile(getpath('preprocpath', st))
         print(st, fnum)
-        train_range = range(fnum - 10, fnum - 2)
+        train_range = range(fnum - 15, fnum - 2)
         test_range = range(fnum - 2, fnum)
         # 3-1 cnn proc
         lstm_train(getpath('preprocpath', st), getpath('cnnworkpath', st), train_range)

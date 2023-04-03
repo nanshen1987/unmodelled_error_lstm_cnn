@@ -15,6 +15,9 @@ from tensorflow.python.keras.preprocessing.timeseries import timeseries_dataset_
 from analyst.viewhandler import view_common_predict
 
 
+from sklearn.metrics import r2_score
+
+
 # construct model
 def lstm_model():
     model_lstm = Sequential()
@@ -39,7 +42,7 @@ def visualize_loss(history, title):
 def lstm_train(preprocpath, lstmworkpath, train_range):
     step = 6
 
-    past = 2880
+    past = 2880*2
     future = 72
     learning_rate = 0.001
     batch_size = 256
@@ -68,7 +71,7 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
             feature = np.append(feature, eachfeature, axis=0)
             label = np.append(label, eachlabel, axis=0)
 
-    split_fraction = 0.715
+    split_fraction = 0.625
     train_split = int(split_fraction * int(feature.shape[0]))
     train_data = feature[0: train_split - 1]
     val_data = feature[train_split:]
@@ -103,8 +106,12 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
     print("Input shape:", inputs.numpy().shape)
     print("Target shape:", targets.numpy().shape)
     inputs = Input(shape=(inputs.shape[1], inputs.shape[2]))
-    lstm_out = LSTM(32)(inputs)
-    outputs = Dense(3)(lstm_out)
+    lstm_out= LSTM(32, return_sequences= True)(inputs)
+    lstm_out_2= LSTM(8, return_sequences= True)(lstm_out)
+    lstm_out_3= LSTM(8)(lstm_out)
+
+
+    outputs = Dense(3)(lstm_out_3)
 
     model = Model(inputs=inputs, outputs=outputs)
     model.compile(optimizer=Adam(learning_rate=learning_rate), loss="mse")
@@ -131,6 +138,28 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
 
 
     visualize_loss(history, "Training and Validation Loss")
+
+
+
+    for x, y in dataset_val.take(5):
+        ypred = model.predict(x)
+        yref = y.numpy()
+        t = np.arange(0, y.numpy().shape[0])
+        plt.figure(figsize=(10, 8), dpi=150)
+        plt.subplot(3, 1, 1)
+        plt.plot(t, yref[:, 0], 'r.')
+        plt.plot(t, ypred[:, 0], 'r-')
+        plt.subplot(3, 1, 2)
+        plt.plot(t, yref[:, 1], 'g.')
+        plt.plot(t, ypred[:, 1], 'g-')
+        plt.subplot(3, 1, 3)
+        plt.plot(t, yref[:, 2], 'b.')
+        plt.plot(t, ypred[:, 2], 'b-')
+        print("决定系数：", r2_score(yref[:, 0],ypred[:, 0]),r2_score(yref[:, 1],ypred[:, 1]),r2_score(yref[:, 2],ypred[:, 2]))
+        plt.show()
+
+
+
     # feature = feature.reshape(feature.shape[0], 13, 32, 1)
     #
     #
