@@ -46,7 +46,7 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
     future = 72
     learning_rate = 0.001
     batch_size = 256
-    epochs = 10
+    epochs = 100
 
     # lstmmodelpath = lstmworkpath + '\\model\\'
     # lstmhistpath = lstmworkpath + '\\hist\\'
@@ -77,86 +77,70 @@ def lstm_train(preprocpath, lstmworkpath, train_range):
     val_data = feature[train_split:]
     start = past + future
     end = start + train_split
-    train_label = label[start:end][:, 1:4]
     sequence_length = int(past / step)
-    dataset_train = timeseries_dataset_from_array(
-        train_data,
-        train_label,
-        sequence_length=sequence_length,
-        sampling_rate=step,
-        batch_size=batch_size,
-    )
-    x_end = len(val_data) - past - future
-
-    label_start = train_split + past + future
-
-    x_val = val_data[:x_end]
-    y_val = label[label_start:][:, 1:4]
-
-    dataset_val = timeseries_dataset_from_array(
-        x_val,
-        y_val,
-        sequence_length=sequence_length,
-        sampling_rate=step,
-        batch_size=batch_size,
-    )
-
-    for batch in dataset_train.take(1):
-        inputs, targets = batch
-    print("Input shape:", inputs.numpy().shape)
-    print("Target shape:", targets.numpy().shape)
-    inputs = Input(shape=(inputs.shape[1], inputs.shape[2]))
-    lstm_out= LSTM(32, return_sequences= True)(inputs)
-    lstm_out_2= LSTM(8, return_sequences= True)(lstm_out)
-    lstm_out_3= LSTM(8)(lstm_out)
 
 
-    outputs = Dense(3)(lstm_out_3)
-
-    model = Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer=Adam(learning_rate=learning_rate), loss="mse")
-    model.summary()
-
-
-    path_checkpoint = "model_checkpoint.h5"
-    es_callback = EarlyStopping(monitor="val_loss", min_delta=0, patience=5)
-
-    modelckpt_callback = ModelCheckpoint(
-        monitor="val_loss",
-        filepath=path_checkpoint,
-        verbose=1,
-        save_weights_only=True,
-        save_best_only=True,
-    )
-
-    history = model.fit(
-        dataset_train,
-        epochs=epochs,
-        validation_data=dataset_val,
-        callbacks=[es_callback, modelckpt_callback],
-    )
-
-
-    visualize_loss(history, "Training and Validation Loss")
-
-
-
-    for x, y in dataset_val.take(5):
-        ypred = model.predict(x)
-        yref = y.numpy()
-        t = np.arange(0, y.numpy().shape[0])
-        plt.figure(figsize=(10, 8), dpi=150)
-        plt.subplot(3, 1, 1)
-        plt.plot(t, yref[:, 0], 'r.')
-        plt.plot(t, ypred[:, 0], 'r-')
-        plt.subplot(3, 1, 2)
-        plt.plot(t, yref[:, 1], 'g.')
-        plt.plot(t, ypred[:, 1], 'g-')
-        plt.subplot(3, 1, 3)
-        plt.plot(t, yref[:, 2], 'b.')
-        plt.plot(t, ypred[:, 2], 'b-')
-        print("决定系数：", r2_score(yref[:, 0],ypred[:, 0]),r2_score(yref[:, 1],ypred[:, 1]),r2_score(yref[:, 2],ypred[:, 2]))
-        plt.show()
+    for j in range(1, 4):
+    # 1,north
+    # 2,east
+    # 3,up
+        train_label = label[start:end][:, j]
+        dataset_train = timeseries_dataset_from_array(
+            train_data,
+            train_label,
+            sequence_length=sequence_length,
+            sampling_rate=step,
+            batch_size=batch_size,
+        )
+        x_end = len(val_data) - past - future
+        label_start = train_split + past + future
+        x_val = val_data[:x_end]
+        y_val = label[label_start:][:, j]
+        dataset_val = timeseries_dataset_from_array(
+            x_val,
+            y_val,
+            sequence_length=sequence_length,
+            sampling_rate=step,
+            batch_size=batch_size,
+        )
+        for batch in dataset_train.take(1):
+            inputs, targets = batch
+        print("Input shape:", inputs.numpy().shape)
+        print("Target shape:", targets.numpy().shape)
+        # model
+        inputs = Input(shape=(inputs.shape[1], inputs.shape[2]))
+        lstm_out = LSTM(32, return_sequences=True)(inputs)
+        lstm_out_2 = LSTM(8)(lstm_out)
+        # lstm_out_3 = LSTM(8)(lstm_out_2)
+        outputs = Dense(1)(lstm_out_2)
+        model = Model(inputs=inputs, outputs=outputs)
+        model.compile(optimizer=Adam(learning_rate=learning_rate), loss="mse")
+        model.summary()
+        path_checkpoint = "model_checkpoint.h5"
+        es_callback = EarlyStopping(monitor="val_loss", min_delta=0, patience=5)
+        modelckpt_callback = ModelCheckpoint(
+            monitor="val_loss",
+            filepath=path_checkpoint,
+            verbose=1,
+            save_weights_only=True,
+            save_best_only=True,
+        )
+        history = model.fit(
+            dataset_train,
+            epochs=epochs,
+            validation_data=dataset_val,
+            callbacks=[es_callback, modelckpt_callback]
+        )
+        visualize_loss(history, "Training and Validation Loss")
+        for x, y in dataset_val.take(5):
+            ypred = model.predict(x)
+            yref = y.numpy()
+            t = np.arange(0, y.numpy().shape[0])
+            plt.figure(figsize=(6, 2), dpi=150)
+            plt.plot(t, yref[:], 'r.')
+            plt.plot(t, ypred[:], 'r-')
+            print("决定系数：", r2_score(yref[:], ypred[:]))
+            plt.show()
 
 
 

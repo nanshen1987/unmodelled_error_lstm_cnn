@@ -13,25 +13,32 @@ import numpy as np
 # from wavelets import WaveletAnalysis
 
 from config.configutil import getpath
+
+
 class OOMFormatter(matplotlib.ticker.ScalarFormatter):
     def __init__(self, order=0, fformat="%1.1f", offset=True, mathText=True):
         self.oom = order
         self.fformat = fformat
-        matplotlib.ticker.ScalarFormatter.__init__(self,useOffset=offset,useMathText=mathText)
+        matplotlib.ticker.ScalarFormatter.__init__(self, useOffset=offset, useMathText=mathText)
+
     def _set_order_of_magnitude(self):
         self.orderOfMagnitude = self.oom
+
     def _set_format(self, vmin=None, vmax=None):
         self.format = self.fformat
         if self._useMathText:
-             self.format = r'$\mathdefault{%s}$' % self.format
+            self.format = r'$\mathdefault{%s}$' % self.format
+
+
 def compSciOrder(val):
-    irg = range(0,1000)
+    irg = range(0, 1000)
     n = 0
-    for  i in irg:
-        if np.power(10,i)<=val and  np.power(10,i+1)>=val:
+    for i in irg:
+        if np.power(10, i) <= val and np.power(10, i + 1) >= val:
             n = i
             break
     return n
+
 
 # show all rtkplot time series
 def viewallpreproc():
@@ -76,13 +83,13 @@ def view_cnn_train_hist(cnnworkpath, modelname):
     plt.show()
 
 
-def view_common_predict(workpath, predictname, direct = 0):
+def view_common_predict(workpath, predictname, direct=0):
     outpath = workpath + '\\out\\'
     viewpath = workpath + 'view\\'
     outext = '.npz'
     presult = np.load(outpath + predictname + outext)
     t = presult['t']
-    t = (t-t[0])*7*24
+    t = (t - t[0]) * 7 * 24
     refer = presult['refer']
     predict = presult['predict']
     filtered = presult['filtered']
@@ -96,7 +103,6 @@ def view_common_predict(workpath, predictname, direct = 0):
     axts = plt.axes(rectts)
     # ax2 = plt.axes(rect2)
 
-
     axts.plot(t, refer, 'r.')
     axts.plot(t, predict, 'g.')
     axts.grid(True)
@@ -104,13 +110,14 @@ def view_common_predict(workpath, predictname, direct = 0):
     plt.xlabel("Time (hour)")
     if direct == 1:
         plt.ylabel("North (mm)")
-    elif direct ==2:
+    elif direct == 2:
         plt.ylabel("East (mm)")
-    elif direct ==3:
+    elif direct == 3:
         plt.ylabel("Up (mm)")
     else:
         plt.ylabel("Displacement (mm)")
-    plt.legend(['original', 'predicted'], loc = 2, ncol = 2)
+    plt.legend(['original', 'predicted'], loc=2, ncol=2)
+
 
 def viewnedpreproc(dir, file):
     data = np.load(os.path.join(dir, file))
@@ -127,18 +134,21 @@ def viewnedpreproc(dir, file):
 
 
 def viewnedpreprocoverview(dir):
-    ns = []
-    es = []
-    ds = []
+    ns = np.array([])
+    es = np.array([])
+    ds = np.array([])
     for root, _, wfiles in os.walk(dir):
         for file in wfiles:
             data = np.load(os.path.join(root, file))
             n = data["label"][:, 1] * 1000
             e = data["label"][:, 2] * 1000
             d = data["label"][:, 3] * 1000
-            ns.append(np.mean(n))
-            es.append(np.mean(e))
-            ds.append(np.mean(d))
+            # ns.append(np.mean(n))
+            # es.append(np.mean(e))
+            # ds.append(np.mean(d))
+            ns = np.append(ns, n, axis=0)
+            es = np.append(es, e, axis=0)
+            ds = np.append(ds, d, axis=0)
     plt.plot(ns, 'r', label='north')
     plt.plot(es, 'g', label='east')
     plt.plot(ds, 'b', label='down')
@@ -146,10 +156,7 @@ def viewnedpreprocoverview(dir):
     plt.show()
 
 
-
-
-
-def viewPreproc(preprocpath,view_range):
+def viewPreproc(preprocpath, view_range):
     files = []
     wfiles = os.listdir(preprocpath)
     for file in wfiles:
@@ -162,135 +169,139 @@ def viewPreproc(preprocpath,view_range):
         print(files[i])
         data = np.load(files[i])
         label = data["label"]
-        t = (label[:, 0]-label[0, 0])*7*24
-        offset = (i-view_range[0])*8
-        plt.plot(t, label[:, 1]*1000-offset, c=tab10[tabkeys[i%10]], label='north')
+        t = (label[:, 0] - label[0, 0]) * 7 * 24
+        offset = (i - view_range[0]) * 8
+        plt.plot(t, label[:, 1] * 1000 - offset, c=tab10[tabkeys[i % 10]], label='north')
         plt.title(wfiles[i])
         # ax2.plot(label[:, 0], label[:, 2], 'g', label='east')
         # ax3.plot(label[:, 0], label[:, 3], 'b', label='up')
-        datamat = np.zeros((len(t),4))
-        datamat[:,0] = t
-        datamat[:, 1] = label[:, 1]*1000
+        datamat = np.zeros((len(t), 4))
+        datamat[:, 0] = t
+        datamat[:, 1] = label[:, 1] * 1000
         datamat[:, 2] = label[:, 2] * 1000
         datamat[:, 3] = label[:, 3] * 1000
-        txtfile = str(i)+'.txt'
+        txtfile = str(i) + '.txt'
         np.savetxt(txtfile, datamat)
     plt.show()
-def viewnormdist_daynum(pred_res, predictname,cnnviewpath):
+
+
+def viewnormdist_daynum(pred_res, predictname, cnnviewpath):
     # plt.figure(figsize=(64, 48), dpi=100)
 
     fig, axs = plt.subplots(3, 1, sharex=True)
 
     # Remove horizontal space between axes
-    fsz =14
+    fsz = 14
     fig.subplots_adjust(hspace=0)
-    axs[0].tick_params(axis='y', labelsize=fsz-1 )
-    axs[1].tick_params(axis='y', labelsize=fsz-1 )
-    axs[2].tick_params(axis='y', labelsize=fsz-1 )
-    plt.xticks(fontsize=fsz-1)
-    axs[0].plot(pred_res[:,0], pred_res[:,1], '.-')
+    axs[0].tick_params(axis='y', labelsize=fsz - 1)
+    axs[1].tick_params(axis='y', labelsize=fsz - 1)
+    axs[2].tick_params(axis='y', labelsize=fsz - 1)
+    plt.xticks(fontsize=fsz - 1)
+    axs[0].plot(pred_res[:, 0], pred_res[:, 1], '.-')
     axs[0].grid(True)
-    axs[0].set_ylabel('North (mm)',fontsize=fsz)
-    axs[1].plot(pred_res[:,0], pred_res[:,2], '.-')
+    axs[0].set_ylabel('North (mm)', fontsize=fsz)
+    axs[1].plot(pred_res[:, 0], pred_res[:, 2], '.-')
     axs[1].grid(True)
-    axs[1].set_ylabel('East (mm)',fontsize=fsz)
-    axs[2].plot(pred_res[:,0], pred_res[:,3], '.-')
+    axs[1].set_ylabel('East (mm)', fontsize=fsz)
+    axs[2].plot(pred_res[:, 0], pred_res[:, 3], '.-')
     axs[2].set_xticks(np.arange(0, 18, 3))
     axs[2].grid(True)
-    axs[2].set_ylabel('Up (mm)',fontsize=fsz)
-    axs[2].set_xlabel('Time (days)',fontsize=fsz)
+    axs[2].set_ylabel('Up (mm)', fontsize=fsz)
+    axs[2].set_xlabel('Time (days)', fontsize=fsz)
     plt.savefig(cnnviewpath + predictname + '_1' + '.png', bbox_inches='tight', pad_inches=0.01)
     plt.show()
 
     fig, axs = plt.subplots(3, 1, sharex=True)
-    fsz =14
+    fsz = 14
     fig.subplots_adjust(hspace=0)
-    axs[0].tick_params(axis='y', labelsize=fsz-1 )
-    axs[1].tick_params(axis='y', labelsize=fsz-1 )
-    axs[2].tick_params(axis='y', labelsize=fsz-1 )
-    plt.xticks(fontsize=fsz-1)
+    axs[0].tick_params(axis='y', labelsize=fsz - 1)
+    axs[1].tick_params(axis='y', labelsize=fsz - 1)
+    axs[2].tick_params(axis='y', labelsize=fsz - 1)
+    plt.xticks(fontsize=fsz - 1)
     # Remove horizontal space between axes
-    axs[0].plot(pred_res[:,0], pred_res[:,4], '.-')
+    axs[0].plot(pred_res[:, 0], pred_res[:, 4], '.-')
     axs[0].grid(True)
-    axs[0].set_ylabel('North (mm)',fontsize=fsz)
-    axs[1].plot(pred_res[:,0], pred_res[:,5], '.-')
-    axs[1].set_ylim(15,23)
+    axs[0].set_ylabel('North (mm)', fontsize=fsz)
+    axs[1].plot(pred_res[:, 0], pred_res[:, 5], '.-')
+    axs[1].set_ylim(15, 23)
     axs[1].grid(True)
-    axs[1].set_ylabel('East (mm)',fontsize=fsz)
-    axs[2].plot(pred_res[:,0], pred_res[:,6], '.-')
+    axs[1].set_ylabel('East (mm)', fontsize=fsz)
+    axs[2].plot(pred_res[:, 0], pred_res[:, 6], '.-')
     axs[2].set_xticks(np.arange(0, 18, 2))
     axs[2].grid(True)
-    axs[2].set_ylabel('Up (mm)',fontsize=fsz)
-    axs[2].set_xlabel('Time (days)',fontsize=fsz)
+    axs[2].set_ylabel('Up (mm)', fontsize=fsz)
+    axs[2].set_xlabel('Time (days)', fontsize=fsz)
     plt.savefig(cnnviewpath + predictname + '_2' + '.png', bbox_inches='tight', pad_inches=0.01)
     plt.show()
-def  view_all_sts_compare(first_pred_res,second_pred_res,sts):
+
+
+def view_all_sts_compare(first_pred_res, second_pred_res, sts):
     for i in range(0, len(sts)):
         sts[i] = sts[i].upper()
     x = np.arange(len(sts))
     width = 0.35
 
     fig, axs = plt.subplots(1, 3, sharey=True)
-    fsz=15
-    axs[0].tick_params(axis='x', labelsize=fsz-1 )
-    axs[0].tick_params(axis='y', labelsize=fsz-1 )
-    axs[1].tick_params(axis='x', labelsize=fsz-1 )
-    axs[2].tick_params(axis='x', labelsize=fsz-1 )
+    fsz = 15
+    axs[0].tick_params(axis='x', labelsize=fsz - 1)
+    axs[0].tick_params(axis='y', labelsize=fsz - 1)
+    axs[1].tick_params(axis='x', labelsize=fsz - 1)
+    axs[2].tick_params(axis='x', labelsize=fsz - 1)
     axs[0].invert_yaxis()
     axs[1].invert_yaxis()
     axs[2].invert_yaxis()
     # Remove horizontal space between axes
     fig.subplots_adjust(wspace=0)
-    axs[0].barh(x - width / 2, first_pred_res[:,0], width, label='8 days',tick_label=sts)
-    axs[0].barh(x + width / 2, first_pred_res[:,3], width, label='18 days')
-    axs[0].set_ylabel('Station',fontsize=fsz)
-    axs[0].set_xlabel('North (mm)',fontsize=fsz)
+    axs[0].barh(x - width / 2, first_pred_res[:, 0], width, label='8 days', tick_label=sts)
+    axs[0].barh(x + width / 2, first_pred_res[:, 3], width, label='18 days')
+    axs[0].set_ylabel('Station', fontsize=fsz)
+    axs[0].set_xlabel('North (mm)', fontsize=fsz)
     axs[0].set_xlim(left=0, right=59)
-    axs[0].set_xticks([0,25,50])
+    axs[0].set_xticks([0, 25, 50])
     # axs[0].set_yticks(x, sts.all)
-    fig.legend( ncol = 2,loc='upper center',bbox_to_anchor=(0.5, 0.95),fontsize=fsz-1)
-    axs[1].barh(x - width / 2, first_pred_res[:,1], width, label='8 days')
-    axs[1].barh(x + width / 2, first_pred_res[:,4], width, label='18 days')
-    axs[1].set_xlabel('East (mm)',fontsize=fsz)
-    axs[1].set_xlim(left = 0, right = 39)
-    axs[1].set_xticks([0,15,30])
-    axs[2].barh(x - width / 2, first_pred_res[:,2], width, label='8 days')
-    axs[2].barh(x + width / 2, first_pred_res[:,5], width, label='18 days')
-    axs[2].set_xlim(left = 0, right = 169)
-    axs[2].set_xlabel('Up (mm)',fontsize=fsz)
-    axs[2].set_xticks([0,80,160])
+    fig.legend(ncol=2, loc='upper center', bbox_to_anchor=(0.5, 0.95), fontsize=fsz - 1)
+    axs[1].barh(x - width / 2, first_pred_res[:, 1], width, label='8 days')
+    axs[1].barh(x + width / 2, first_pred_res[:, 4], width, label='18 days')
+    axs[1].set_xlabel('East (mm)', fontsize=fsz)
+    axs[1].set_xlim(left=0, right=39)
+    axs[1].set_xticks([0, 15, 30])
+    axs[2].barh(x - width / 2, first_pred_res[:, 2], width, label='8 days')
+    axs[2].barh(x + width / 2, first_pred_res[:, 5], width, label='18 days')
+    axs[2].set_xlim(left=0, right=169)
+    axs[2].set_xlabel('Up (mm)', fontsize=fsz)
+    axs[2].set_xticks([0, 80, 160])
 
     # plt.tight_layout()
-    plt.savefig('all_sts_compare_01'+'.png',bbox_inches='tight',pad_inches=0.02)
+    plt.savefig('all_sts_compare_01' + '.png', bbox_inches='tight', pad_inches=0.02)
     plt.show()
 
     fig, axs = plt.subplots(1, 3, sharey=True)
-    axs[0].tick_params(axis='x', labelsize=fsz-1 )
-    axs[0].tick_params(axis='y', labelsize=fsz-1 )
-    axs[1].tick_params(axis='x', labelsize=fsz-1 )
-    axs[2].tick_params(axis='x', labelsize=fsz-1 )
+    axs[0].tick_params(axis='x', labelsize=fsz - 1)
+    axs[0].tick_params(axis='y', labelsize=fsz - 1)
+    axs[1].tick_params(axis='x', labelsize=fsz - 1)
+    axs[2].tick_params(axis='x', labelsize=fsz - 1)
     axs[0].invert_yaxis()
     axs[1].invert_yaxis()
     axs[2].invert_yaxis()
     # Remove horizontal space between axes
     fig.subplots_adjust(wspace=0)
-    axs[0].barh(x - width / 2, second_pred_res[:,0], width, label='8 days',tick_label=sts)
-    axs[0].barh(x + width / 2, second_pred_res[:,3], width, label='18 days')
+    axs[0].barh(x - width / 2, second_pred_res[:, 0], width, label='8 days', tick_label=sts)
+    axs[0].barh(x + width / 2, second_pred_res[:, 3], width, label='18 days')
     axs[0].set_xlim(left=0, right=59)
-    axs[0].set_xticks([0,25,50])
-    axs[0].set_ylabel('Station',fontsize=fsz)
-    axs[0].set_xlabel('North (mm)',fontsize=fsz)
-    fig.legend( ncol = 2,loc='upper center',bbox_to_anchor=(0.5, 0.95),fontsize=fsz)
-    axs[1].barh(x - width / 2, second_pred_res[:,1], width, label='8 days')
-    axs[1].barh(x + width / 2, second_pred_res[:,4], width, label='18 days')
-    axs[1].set_xlim(left = 0, right = 35)
-    axs[1].set_xticks([0,15,30])
-    axs[1].set_xlabel('East (mm)',fontsize=fsz)
+    axs[0].set_xticks([0, 25, 50])
+    axs[0].set_ylabel('Station', fontsize=fsz)
+    axs[0].set_xlabel('North (mm)', fontsize=fsz)
+    fig.legend(ncol=2, loc='upper center', bbox_to_anchor=(0.5, 0.95), fontsize=fsz)
+    axs[1].barh(x - width / 2, second_pred_res[:, 1], width, label='8 days')
+    axs[1].barh(x + width / 2, second_pred_res[:, 4], width, label='18 days')
+    axs[1].set_xlim(left=0, right=35)
+    axs[1].set_xticks([0, 15, 30])
+    axs[1].set_xlabel('East (mm)', fontsize=fsz)
     # axs[1].set_ylim(bottom = 0, top = 7.9)
-    axs[2].barh(x - width / 2, second_pred_res[:,2], width, label='8 days')
-    axs[2].barh(x + width / 2, second_pred_res[:,5], width, label='18 days')
-    axs[2].set_xlim(left = 0, right = 139)
-    axs[2].set_xlabel('Up (mm)',fontsize=fsz)
-    axs[2].set_xticks([0,60,120])
-    plt.savefig('all_sts_compare_02'+'.png',bbox_inches='tight',pad_inches=0.02)
+    axs[2].barh(x - width / 2, second_pred_res[:, 2], width, label='8 days')
+    axs[2].barh(x + width / 2, second_pred_res[:, 5], width, label='18 days')
+    axs[2].set_xlim(left=0, right=139)
+    axs[2].set_xlabel('Up (mm)', fontsize=fsz)
+    axs[2].set_xticks([0, 60, 120])
+    plt.savefig('all_sts_compare_02' + '.png', bbox_inches='tight', pad_inches=0.02)
     plt.show()

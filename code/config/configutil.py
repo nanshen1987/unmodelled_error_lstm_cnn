@@ -21,7 +21,7 @@ class ReadConfig:
 
 def getpath(key, station):
     root_dir = os.path.dirname(os.path.abspath('.'))
-    readcfg = ReadConfig(root_dir + "\\code\\config\\conf.cfg")
+    readcfg = ReadConfig(root_dir + "\\config\\conf.cfg")
     val = readcfg.getpath('basepath') + station + '\\' + readcfg.getpath('soltype') + '\\'
     if key == 'eachsolpath' or key == 'parsedsolpath' or key == 'parsedpospath' or key == 'parsedstatpath' or \
             key == 'preprocpath' or key == 'cnnworkpath' or key == 'rfrworkpath' or key == 'svrrbfworkpath'  or key == 'cnnviewpath':
